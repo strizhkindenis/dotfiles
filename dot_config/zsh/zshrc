@@ -1,0 +1,13 @@
+fpath=(
+  "$ZDOTDIR/functions"
+  "$ZDOTDIR/completions"
+  $fpath
+)
+
+for f in "$ZDOTDIR/functions"/*(N.); do
+  autoload -Uz "${f:t}"
+done
+
+for f in "$ZDOTDIR/conf.d"/*.zsh(N); do
+  source "$f"
+done

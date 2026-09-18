@@ -1,0 +1,4 @@
+HISTFILE=~/.cache/histfile
+HISTSIZE=10000
+SAVEHIST=10000
+mkdir -p "${HISTFILE:h}"
