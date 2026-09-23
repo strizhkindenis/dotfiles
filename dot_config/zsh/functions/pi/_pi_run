@@ -7,12 +7,12 @@ local user_home="/home/$user"
 local uid="$(id -u)"
 local gid="$(id -g)"
 local cargo_home="$HOME/.cargo"
+local rustup_home="$HOME/.rustup"
 local cargo_incremental="1"
 local image="pi-sandbox"
 local containerfile="$_PI_DIR/Containerfile"
 local new_hash="$(sha256sum "$containerfile" | awk '{print $1}')"
 local old_hash="$(podman inspect "$image" --format '{{index .Config.Labels "pi-hash"}}' 2>/dev/null)"
-local 
 
 if [[ $new_hash != "$old_hash" ]]; then
 	printf 'pi: building %s\n' "$image"
@@ -22,6 +22,7 @@ if [[ $new_hash != "$old_hash" ]]; then
 		--build-arg "GID=$gid" \
 		--build-arg "HOME=$user_home" \
 		--build-arg "CARGO_HOME=$cargo_home" \
+		--build-arg "RUSTUP_HOME=$rustup_home" \
 		--build-arg "CARGO_INCREMENTAL=$cargo_incremental" \
 		--label "pi-hash=$new_hash" \
 		-f "$containerfile" \
@@ -30,7 +31,8 @@ if [[ $new_hash != "$old_hash" ]]; then
 fi
 
 local -a home_mounts=(
-	"$HOME/.cargo"
+	"$cargo_home"
+	"$rustup_home"
 	"$HOME/.gitconfig"
 )
 local -a vol_args
