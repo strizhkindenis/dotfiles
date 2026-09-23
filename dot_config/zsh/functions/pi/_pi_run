@@ -11,19 +11,31 @@ local rustup_home="$HOME/.rustup"
 local cargo_incremental="1"
 local image="pi-sandbox"
 local containerfile="$_PI_DIR/Containerfile"
-local new_hash="$(sha256sum "$containerfile" | awk '{print $1}')"
-local old_hash="$(podman inspect "$image" --format '{{index .Config.Labels "pi-hash"}}' 2>/dev/null)"
+local -a build_args=(
+	--build-arg "USER_NAME=$user"
+	--build-arg "UID=$uid"
+	--build-arg "GID=$gid"
+	--build-arg "HOME=$user_home"
+	--build-arg "CARGO_HOME=$cargo_home"
+	--build-arg "RUSTUP_HOME=$rustup_home"
+	--build-arg "CARGO_INCREMENTAL=$cargo_incremental"
+)
+local new_hash="$(
+	{
+		sha256sum "$containerfile"
+		printf '%s\n' "${build_args[@]}"
+	} | sha256sum | awk '{print $1}'
+)"
+local old_hash="$(
+	podman inspect "$image" \
+		--format '{{index .Config.Labels "pi-hash"}}' \
+		2>/dev/null
+)"
 
 if [[ $new_hash != "$old_hash" ]]; then
 	printf 'pi: building %s\n' "$image"
 	podman build \
-		--build-arg "USER_NAME=$user" \
-		--build-arg "UID=$uid" \
-		--build-arg "GID=$gid" \
-		--build-arg "HOME=$user_home" \
-		--build-arg "CARGO_HOME=$cargo_home" \
-		--build-arg "RUSTUP_HOME=$rustup_home" \
-		--build-arg "CARGO_INCREMENTAL=$cargo_incremental" \
+		"${build_args[@]}" \
 		--label "pi-hash=$new_hash" \
 		-f "$containerfile" \
 		-t "$image" \
