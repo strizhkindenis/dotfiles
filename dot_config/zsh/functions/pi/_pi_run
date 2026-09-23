@@ -1,0 +1,55 @@
+typeset -g _PI_DIR="${${(%):-%x}:A:h}"
+
+local workdir="${1:A}"
+local entrypoint="$2"
+local user="$(id -un)"
+local user_home="/home/$user"
+local uid="$(id -u)"
+local gid="$(id -g)"
+local cargo_home="$HOME/.cargo"
+local cargo_incremental="1"
+local image="pi-sandbox"
+local containerfile="$_PI_DIR/Containerfile"
+local new_hash="$(sha256sum "$containerfile" | awk '{print $1}')"
+local old_hash="$(podman inspect "$image" --format '{{index .Config.Labels "pi-hash"}}' 2>/dev/null)"
+local 
+
+if [[ $new_hash != "$old_hash" ]]; then
+	printf 'pi: building %s\n' "$image"
+	podman build \
+		--build-arg "USER_NAME=$user" \
+		--build-arg "UID=$uid" \
+		--build-arg "GID=$gid" \
+		--build-arg "HOME=$user_home" \
+		--build-arg "CARGO_HOME=$cargo_home" \
+		--build-arg "CARGO_INCREMENTAL=$cargo_incremental" \
+		--label "pi-hash=$new_hash" \
+		-f "$containerfile" \
+		-t "$image" \
+		"$_PI_DIR" || return 1
+fi
+
+local -a home_mounts=(
+	"$HOME/.cargo"
+	"$HOME/.gitconfig"
+)
+local -a vol_args
+local m
+for m in "${home_mounts[@]}"; do
+	[[ -e $m ]] || continue
+	vol_args+=(-v "$m:$user_home/${m#"$HOME/"}")
+done
+
+printf 'pi: %s in %s\n' "$entrypoint" "$workdir"
+
+podman run --rm -it \
+	--userns keep-id \
+	--init \
+	--pull never \
+	--add-host host.docker.internal:host-gateway \
+	--entrypoint "$entrypoint" \
+	--workdir "$workdir" \
+	"${vol_args[@]}" \
+	-v "$workdir:$workdir" \
+	-v pi-agent:$user_home/.pi \
+	"$image"

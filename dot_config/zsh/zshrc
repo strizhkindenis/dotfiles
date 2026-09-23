@@ -1,13 +1,23 @@
 fpath=(
-  "$ZDOTDIR/functions"
-  "$ZDOTDIR/completions"
-  $fpath
+	"$ZDOTDIR/functions"
+	"$ZDOTDIR/functions"/*(N/)
+	"$ZDOTDIR/completions"
+	$fpath
 )
 
-for f in "$ZDOTDIR/functions"/*(N.); do
-  autoload -Uz "${f:t}"
+autoload_dir() {
+	for f in "$1"/*(N.); do
+		autoload -Uz "${f:t}"
+	done
+}
+
+autoload_dir "$ZDOTDIR/functions"
+for d in "$ZDOTDIR/functions"/*(N/); do
+	autoload_dir "$d"
 done
 
 for f in "$ZDOTDIR/conf.d"/*.zsh(N); do
-  source "$f"
+	source "$f"
 done
+
+unset -f autoload_dir
