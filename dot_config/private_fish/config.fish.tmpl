@@ -37,10 +37,15 @@ if status is-login
     end
 end
 {{ else if eq .chezmoi.os "darwin" -}}
-if type -q brew; and not set -q HOMEBREW_COMMAND_NOT_FOUND_HANDLER
-    set HOMEBREW_COMMAND_NOT_FOUND_HANDLER (brew --repository)/Library/Homebrew/command-not-found/handler.fish
-    if test -f $HOMEBREW_COMMAND_NOT_FOUND_HANDLER
-      source $HOMEBREW_COMMAND_NOT_FOUND_HANDLER
+if type -q brew
+    if not set -q HOMEBREW_COMMAND_NOT_FOUND_HANDLER
+        set HOMEBREW_COMMAND_NOT_FOUND_HANDLER (brew --repository)/Library/Homebrew/command-not-found/handler.fish
+        if test -f $HOMEBREW_COMMAND_NOT_FOUND_HANDLER
+            source $HOMEBREW_COMMAND_NOT_FOUND_HANDLER
+        end
+    end
+    if not type -q cargo; and brew list --version rustup >/dev/null
+        fish_add_path (brew --prefix rustup)/bin
     end
 end
 {{ end -}}
