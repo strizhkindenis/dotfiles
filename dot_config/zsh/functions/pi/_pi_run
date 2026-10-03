@@ -6,24 +6,30 @@ local user="$(id -un)"
 local user_home="/home/$user"
 local uid="$(id -u)"
 local gid="$(id -g)"
+local flutter_home="$HOME/.local/share/flutter"
 local cargo_home="$HOME/.cargo"
 local rustup_home="$HOME/.rustup"
 local cargo_incremental="1"
 local image="pi-sandbox"
 local containerfile="$_PI_DIR/Containerfile"
-local -a build_args=(
-	--build-arg "USER_NAME=$user"
-	--build-arg "UID=$uid"
-	--build-arg "GID=$gid"
-	--build-arg "HOME=$user_home"
-	--build-arg "CARGO_HOME=$cargo_home"
-	--build-arg "RUSTUP_HOME=$rustup_home"
-	--build-arg "CARGO_INCREMENTAL=$cargo_incremental"
+local -a build_args=(--build-arg "USER_NAME=$user")
+local m
+local -a run_envs=(
+	"HOME=$user_home"
+	"CARGO_HOME=$cargo_home"
+	"RUSTUP_HOME=$rustup_home"
+	"FLUTTER_HOME=$flutter_home"
+	"CARGO_INCREMENTAL=$cargo_incremental"
+	"PATH=$flutter_home/bin:$cargo_home/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
 )
+local -a env_args
+for m in "${run_envs[@]}"; do
+	env_args+=(--env "$m")
+done
 local new_hash="$(
 	{
 		sha256sum "$containerfile"
-		printf '%s\n' "${build_args[@]}"
+		printf '%s\n' "${build_args[@]}" "${run_envs[@]}"
 	} | sha256sum | awk '{print $1}'
 )"
 local old_hash="$(
@@ -45,10 +51,11 @@ fi
 local -a home_mounts=(
 	"$cargo_home"
 	"$rustup_home"
+	"$flutter_home"
+	"$HOME/.pi/agent/skills"
 	"$HOME/.gitconfig"
 )
 local -a vol_args
-local m
 for m in "${home_mounts[@]}"; do
 	[[ -e $m ]] || continue
 	vol_args+=(-v "$m:$user_home/${m#"$HOME/"}")
@@ -58,11 +65,13 @@ printf 'pi: %s in %s\n' "$entrypoint" "$workdir"
 
 podman run --rm -it \
 	--userns keep-id \
+	--user "$uid:$gid" \
 	--init \
 	--pull never \
 	--add-host host.docker.internal:host-gateway \
 	--entrypoint "$entrypoint" \
 	--workdir "$workdir" \
+	"${env_args[@]}" \
 	"${vol_args[@]}" \
 	-v "$workdir:$workdir" \
 	-v pi-agent:$user_home/.pi \

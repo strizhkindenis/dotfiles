@@ -21,26 +21,10 @@ RUN : \
 RUN npm install -g --ignore-scripts @earendil-works/pi-coding-agent
 
 ARG USER_NAME
-ARG UID
-ARG GID
-ARG HOME
-ARG CARGO_HOME
-ARG RUSTUP_HOME
-ARG CARGO_INCREMENTAL
-
 RUN : \
   && userdel node \
-  && groupadd -g "$GID" "$USER_NAME" \
-  && useradd -l -u "$UID" -g "$GID" \
-	-G sudo --shell /bin/bash --create-home "$USER_NAME" \
+  && useradd -l -G sudo --shell /bin/bash --create-home "$USER_NAME" \
   && printf '%s ALL=(ALL) NOPASSWD: ALL\n' "$USER_NAME" \
 	> "/etc/sudoers.d/$USER_NAME"
 
-ENV \
-  PATH="$CARGO_HOME/bin:$PATH" \
-  CARGO_HOME="$CARGO_HOME" \
-  RUSTUP_HOME="$RUSTUP_HOME" \
-  CARGO_INCREMENTAL="$CARGO_INCREMENTAL"
-
 USER $USER_NAME
-WORKDIR $HOME
