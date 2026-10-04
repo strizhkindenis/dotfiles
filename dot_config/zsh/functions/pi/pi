@@ -1,1 +1,1 @@
-_pi_run "${1:-$PWD}" pi
+_pi_run "$PWD" pi "$@"
