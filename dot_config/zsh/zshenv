@@ -1,0 +1,2 @@
+source "$ZDOTDIR/conf.d/30-path.zsh"
+source "$ZDOTDIR/conf.d/40-env.zsh"

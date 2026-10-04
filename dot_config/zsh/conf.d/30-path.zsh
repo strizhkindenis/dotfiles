@@ -1,3 +1,4 @@
+typeset -U path
 path=(
   "$HOME/.local/bin"
   "$HOME/.cargo/bin"
@@ -5,4 +6,3 @@ path=(
   $path
 )
 
-typeset -U fpath

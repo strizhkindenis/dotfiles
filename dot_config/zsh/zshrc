@@ -1,3 +1,4 @@
+typeset -U fpath
 fpath=(
 	"$ZDOTDIR/functions"
 	"$ZDOTDIR/functions"/*(N/)
@@ -17,6 +18,9 @@ for d in "$ZDOTDIR/functions"/*(N/); do
 done
 
 for f in "$ZDOTDIR/conf.d"/*.zsh(N); do
+	case "$f" in
+		"$ZDOTDIR/conf.d/30-path.zsh"|"$ZDOTDIR/conf.d/40-env.zsh") continue ;;
+	esac
 	source "$f"
 done
 
