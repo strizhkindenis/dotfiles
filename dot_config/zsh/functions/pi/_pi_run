@@ -26,6 +26,21 @@ local -a env_args
 for m in "${run_envs[@]}"; do
 	env_args+=(--env "$m")
 done
+local -a display_args
+case $OSTYPE in
+linux*)
+	if [[ -n $XDG_RUNTIME_DIR && -n $WAYLAND_DISPLAY ]]; then
+		local wayland_socket="$XDG_RUNTIME_DIR/$WAYLAND_DISPLAY"
+		if [[ -S $wayland_socket ]]; then
+			env_args+=(--env "XDG_RUNTIME_DIR=/tmp" --env "WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
+			display_args+=(-v "$wayland_socket:/tmp/$WAYLAND_DISPLAY")
+			run_envs+=("XDG_RUNTIME_DIR=/tmp" "WAYLAND_DISPLAY=$WAYLAND_DISPLAY")
+		fi
+	fi
+	;;
+darwin*)
+	;;
+esac
 local new_hash="$(
 	{
 		sha256sum "$containerfile"
@@ -73,6 +88,7 @@ podman run --rm -it \
 	--workdir "$workdir" \
 	"${env_args[@]}" \
 	"${vol_args[@]}" \
+	"${display_args[@]}" \
 	-v "$workdir:$workdir" \
 	-v pi-agent:$user_home/.pi \
 	"$image"
